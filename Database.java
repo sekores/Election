@@ -50,7 +50,7 @@ public class Database {
     public static void getData() {
     	 	FileReader fr;
 			try {
-				fr = new FileReader("/home/serkan/Dokumente/Datenbanksysteme/Projekt/american-election-tweets.csv");
+				fr = new FileReader("/home/serkan/Dokumente/Datenbanksysteme/Projekt/american-election-tweets.xlsx");
 				BufferedReader br = new BufferedReader(fr);
 				
 				try {
