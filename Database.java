@@ -1,15 +1,21 @@
 package election;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.util.Iterator;
+
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Database {
 
@@ -34,27 +40,43 @@ public class Database {
         
 		return c;
     }
-    
-    public static void createTable(){
-    	try {
-			Connection dbs = getConnect();
-			PreparedStatement createStatements = dbs.prepareStatement("CREATE TABLE IF NOT EXISTS student( matrikelnummer integer NOT NULL, vorname character(20), nachname character(20), CONSTRAINT matrikelnummer PRIMARY KEY (matrikelnummer));");
-			createStatements.executeUpdate();
-			System.out.println("Entweder besteht schon solch eine Tabelle oder sie wurde erfolgreich erstellt.");
-    	} catch (Exception e) {
-    		e.printStackTrace();
-			System.out.println("Die Tabelle konnte nicht erstellt werden.");
-		}
+   
+    public static void getExcel() throws IOException{
+    	
+    		String excelFilePath = "/home/serkan/Dokumente/Datenbanksysteme/Projekt/american-election-tweets.xlsx";
+			FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
+			
+			Workbook workbook = new XSSFWorkbook(inputStream);
+			Sheet firstSheet = (Sheet) workbook.getSheetAt(0);
+			Iterator<Row> iterator = firstSheet.iterator();
+				
+				while(iterator.hasNext()){
+					Row nextRow = iterator.next();
+					Iterator<Cell> cellIterator = nextRow.cellIterator();
+					
+					while (cellIterator.hasNext()) {
+		                Cell cell = cellIterator.next();
+		                String[] temp;//Hier waren wir stehen geblieben
+		                //Idee: Alle Cells in eine Liste von Strings einfügen und damit weiter arbeiten.
+		                System.out.println(cell.toString());
+		            }
+		            System.out.println();
+					workbook.close();
+					inputStream.close();
+				}
+    	
+    	
+        
     }
     
-    public static void getData() {
+    public static void getCSV() {
     	 	FileReader fr;
 			try {
-				fr = new FileReader("/home/serkan/Dokumente/Datenbanksysteme/Projekt/american-election-tweets.xlsx");
+				fr = new FileReader("/home/serkan/Dokumente/Datenbanksysteme/Projekt/american-election-tweets.csv");
 				BufferedReader br = new BufferedReader(fr);
 				
 				try {
-					while(br.read() != -1){
+					while(br.ready() != false){
 						System.out.println(br.readLine());
 					}
 
@@ -71,11 +93,16 @@ public class Database {
 
     	    
     }
-    
+  
     public static void main(String[] args) {
        
-    	getConnect();
-    	getData();
+    	
+    	try {
+			getExcel();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
     }
 
