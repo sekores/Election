@@ -158,7 +158,6 @@ public class Database {
 						(int)input.charAt(hashtag_index)>96 && (int)input.charAt(hashtag_index)<123)){
 					
 					result=result+input.charAt(hashtag_index);
-					System.out.println(result);
 					break;
 				}
 
@@ -283,12 +282,12 @@ public class Database {
 			getExcel();
 			insertDictionaryInDatabase(dictionary);
 			insertTweet_hashtag();
-			System.out.println(data.size());
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	System.out.println(data.get(150));
+    	
 
     }
 
