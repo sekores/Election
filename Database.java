@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,30 +22,36 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class Database {
 	
-    public static Connection getConnect(){
-    	
-    	Connection c = null;
-    	
-    	String db = "Election";
-        String url = "jdbc:postgresql://localhost:5432/"+db;
-        
-        String username = "postgres";
-        String password = "postgres";
-        
-        try {
-            c = DriverManager.getConnection(url,username,password);
-            //System.out.println("Verbindung zur Datenbank "+db+" mit dem Benutzer "+username+" wurde erfolgreich hergestellt");
-        }catch (Exception e) {
-        	e.printStackTrace();
-        	System.out.println("Verbindung zur Datenbank "+db+" mit dem Benutzer "+username+" konnte nicht hergestellt werden");
-        }
-        
-		return c;
-    }
+	static Hashtable<String, Integer> dictionary = new Hashtable<String,Integer>();
+	
+	static Connection c = null;
+	
+	static List<String> data = new ArrayList<String>();
+	
+	 public static Connection getConnect(){
+	    	
+	    	Connection c = null;
+	    	
+	    	String db = "Election";
+	        String url = "jdbc:postgresql://localhost:5432/"+db;
+	        
+	        String username = "postgres";
+	        String password = "postgres";
+	        
+	        try {
+	            c = DriverManager.getConnection(url,username,password);
+	            //System.out.println("Verbindung zur Datenbank "+db+" mit dem Benutzer "+username+" wurde erfolgreich hergestellt");
+	        }catch (Exception e) {
+	        	e.printStackTrace();
+	        	System.out.println("Verbindung zur Datenbank "+db+" mit dem Benutzer "+username+" konnte nicht hergestellt werden");
+	        }
+	        
+			return c;
+	    }
    
-	public static void getExcel() throws IOException{
-    	
-    		String excelFilePath = "/home/serkan/Dokumente/Datenbanksysteme/Projekt/american-election-tweets.xlsx";
+	 public static void getExcel() throws IOException{
+	    	
+ 			String excelFilePath = "/home/serkan/Dokumente/Datenbanksysteme/Projekt/american-election-tweets.xlsx";
 			FileInputStream inputStream = new FileInputStream(new File(excelFilePath));
 			
 			Workbook workbook = new XSSFWorkbook(inputStream);
@@ -53,9 +60,9 @@ public class Database {
 			iterator.next();
 				
 			
-            List<String> temp = new ArrayList<String>();
-            
-            
+         List<String> temp = new ArrayList<String>();
+         
+         
 				while(iterator.hasNext()){
 					Row nextRow = iterator.next();
 					Iterator<Cell> cellIterator = nextRow.cellIterator();
@@ -85,52 +92,111 @@ public class Database {
 						
 						election.close();
 						
-						insertHashtag(temp.get(1));
+						insertHashtagInDictionary(temp.get(1));
+						
+						
 						
 			    	} catch (Exception e) {
-			    		//e.printStackTrace();
-			    		//System.out.println("INSERT INTO  Tweet(anzahl_geteilt, anzahl_like, text, datum, benutzer, uhrzeit) VALUES ("+temp.get(7)+","+temp.get(8)+",'"+tweet(temp.get(1))+"','"+date(temp.get(4))+"','"+temp.get(0)+"','"+time(temp.get(4))+"')");
+			    		e.printStackTrace();
 					}
-		            
+		            data.add(temp.get(1));
 					workbook.close();
 					inputStream.close();
 				}
 				
-    	
-    	
-        
-    }
+ 	
+ 	
+     
+}
     
-	public static void insertHashtag(String input) {
+	public static void insertTweet_hashtag() {
 		
-		while(input.contains("#")){
+		for (int i = 1; i < data.size(); i++) {
+			
+			for (String key:dictionary.keySet()){
+				
+				if(data.get(i-1).contains("#"+key+"\"") || 
+				   data.get(i-1).contains("#"+key+" ")  ||
+				   data.get(i-1).contains("#"+key+"...")){
+					
+					try {		
+						Connection conn = getConnect();
+						//In die Tabelle einfügen
+						PreparedStatement insertTweet_hashtag = conn.prepareStatement( "INSERT INTO tweet_hashtag (tweet_id,hashtag_text) VALUES ("+i+",'"+key+"') ");
+						insertTweet_hashtag.executeUpdate();
+						conn.close();
+					} 
+					catch (Exception e) {
+						e.printStackTrace();
+					}
+					
+				}
+				
+			}
+			
+		} 
+		
+		
+	}
+
+	public static void insertHashtagInDictionary(String input) {
+		
+		while(input.contains("#") ){
+			
 			String result="";
 			int hashtag_index=input.indexOf("#")+1;
-			while(input.charAt(hashtag_index)!=' '){
-					
+			while( (int)input.charAt(hashtag_index)>47 && (int)input.charAt(hashtag_index)<58 || 
+					(int)input.charAt(hashtag_index)>64 && (int)input.charAt(hashtag_index)<91 || 
+					(int)input.charAt(hashtag_index)==95 || 
+					(int)input.charAt(hashtag_index)>96 && (int)input.charAt(hashtag_index)<123){
 				//Solange an der (Stelle #)+1 bis Space abspeichern
 				result=result+input.charAt(hashtag_index);
 				hashtag_index++;
+				if(hashtag_index+1==input.length() && ((int)input.charAt(hashtag_index)>47 && (int)input.charAt(hashtag_index)<58 || 
+						(int)input.charAt(hashtag_index)>64 && (int)input.charAt(hashtag_index)<91 || 
+						(int)input.charAt(hashtag_index)==95 || 
+						(int)input.charAt(hashtag_index)>96 && (int)input.charAt(hashtag_index)<123)){
+					
+					result=result+input.charAt(hashtag_index);
+					System.out.println(result);
+					break;
+				}
 
-			}
+			}if(result==""|| result==" "){
 				
+			}else{ 
+				
+				if (dictionary.containsKey(result)) {
+					dictionary.put(result,dictionary.get(result)+1);
+				}
+				
+				else{				
+					dictionary.put(result, 1);
+				}
+			}
 			input=input.substring(hashtag_index, input.length());
 				
-			System.out.println(result);
+
+		}
+		
+	}
+	
+	public static void insertDictionaryInDatabase(Hashtable<String,Integer> dictionary){
+		
+		for (String key:dictionary.keySet()) {
 			try {		
 				Connection conn = getConnect();
 				//In die Tabelle einfügen
-				PreparedStatement insertHashtag = conn.prepareStatement( "INSERT INTO Hashtag (text) VALUES ('"+result+"') ");
+				PreparedStatement insertHashtag = conn.prepareStatement( "INSERT INTO Hashtag (text,anzahl_verwendung) VALUES ('"+key+"',"+dictionary.get(key)+") ");
 				insertHashtag.executeUpdate();
 				conn.close();
-				
-			} catch (Exception e) {
-					
+			} 
+			catch (Exception e) {
 				e.printStackTrace();
-				System.out.println("INSERT INTO Hashtag(text) VALUES ('"+result+"');");
-				
 			}
+			
 		}
+		
 	}
 
 	public static String tweet(String input) {
@@ -184,7 +250,7 @@ public class Database {
 		return result;
 	}
 
-	//ursprünglich wollten wir es mit der CSV machen,  jedoch ahben wir uns dann auf excel umentschieden
+	//ursprünglich wollten wir es mit der CSV machen,  jedoch haben wir uns dann auf excel umentschieden
 	public static void getCSV() {
     	 	FileReader fr;
 			try {
@@ -212,14 +278,17 @@ public class Database {
   
     
 	public static void main(String[] args) {
-    	
-    	
+		
     	try {
 			getExcel();
+			insertDictionaryInDatabase(dictionary);
+			insertTweet_hashtag();
+			System.out.println(data.size());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+    	System.out.println(data.get(150));
 
     }
 
