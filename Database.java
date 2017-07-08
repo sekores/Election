@@ -20,6 +20,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+
 public class Database {
 	
 	static Hashtable<String, Integer> dictionary = new Hashtable<String,Integer>();
@@ -109,39 +110,73 @@ public class Database {
      
 }
     
-	public static void insertTweet_hashtag() {
+	 public static void insertTweet_hashtag() {
 		
 		for (int i = 1; i < data.size(); i++) {
 			
-			for (String key:dictionary.keySet()){
-				
-				if(data.get(i-1).contains("#"+key+"\"") || 
-				   data.get(i-1).contains("#"+key+" ")  ||
-				   data.get(i-1).contains("#"+key+"...")){
-					
-					try {		
-						Connection conn = getConnect();
-						//In die Tabelle einfügen
-						PreparedStatement insertTweet_hashtag = conn.prepareStatement( "INSERT INTO tweet_hashtag (tweet_id,hashtag_text) VALUES ("+i+",'"+key+"') ");
-						insertTweet_hashtag.executeUpdate();
-						conn.close();
-					} 
-					catch (Exception e) {
-						e.printStackTrace();
-					}
-					
-				}
-				
-			}
+			List<String> array = cutHashtag(data.get(i-1));
 			
-		} 
-		
-		
+			for (int j = 0; j < array.size(); j++) {
+				try {		
+					Connection conn = getConnect();
+					//In die Tabelle einfügen
+					PreparedStatement insertTweet_hashtag = conn.prepareStatement( "INSERT INTO tweet_hashtag (tweet_id,hashtag_text) VALUES ("+i+",'"+array.get(j)+"') ");
+					insertTweet_hashtag.executeUpdate();
+					conn.close();
+				} 
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
-
+	
 	public static void insertHashtagInDictionary(String input) {
 		
 		while(input.contains("#") ){
+			
+			String result="";
+			int hashtag_index=input.indexOf("#")+1;
+			while( (int)input.charAt(hashtag_index)>47 && (int)input.charAt(hashtag_index)<58 || 
+					(int)input.charAt(hashtag_index)>64 && (int)input.charAt(hashtag_index)<91 || 
+					(int)input.charAt(hashtag_index)==95 || 
+					(int)input.charAt(hashtag_index)>96 && (int)input.charAt(hashtag_index)<123){
+				//Solange an der (Stelle #)+1 bis Space abspeichern
+				result=result+input.charAt(hashtag_index);
+				hashtag_index++;
+				if(hashtag_index+1==input.length() && ((int)input.charAt(hashtag_index)>47 && (int)input.charAt(hashtag_index)<58 || 
+						(int)input.charAt(hashtag_index)>64 && (int)input.charAt(hashtag_index)<91 || 
+						(int)input.charAt(hashtag_index)==95 || 
+						(int)input.charAt(hashtag_index)>96 && (int)input.charAt(hashtag_index)<123)){
+					
+					result=result+input.charAt(hashtag_index);
+					System.out.println(result);
+					break;
+				}
+
+			}if(result==""|| result==" "){
+				
+			}else{ 
+				
+				if (dictionary.containsKey(result)) {
+					dictionary.put(result,dictionary.get(result)+1);
+				}
+				
+				else{				
+					dictionary.put(result, 1);
+				}
+			}
+			input=input.substring(hashtag_index, input.length());
+				
+
+		}
+		
+	}
+
+	public static List<String> cutHashtag(String input) {
+		List<String> array = new ArrayList<String>();
+		while(input.contains("#") ){
+			
 			
 			String result="";
 			int hashtag_index=input.indexOf("#")+1;
@@ -164,19 +199,16 @@ public class Database {
 			}if(result==""|| result==" "){
 				
 			}else{ 
-				
-				if (dictionary.containsKey(result)) {
-					dictionary.put(result,dictionary.get(result)+1);
-				}
-				
-				else{				
-					dictionary.put(result, 1);
+				if(array.contains(result)==false){
+					array.add(result);
 				}
 			}
 			input=input.substring(hashtag_index, input.length());
 				
 
 		}
+		
+		return array;
 		
 	}
 	
@@ -277,12 +309,11 @@ public class Database {
   
     
 	public static void main(String[] args) {
-		
     	try {
 			getExcel();
 			insertDictionaryInDatabase(dictionary);
 			insertTweet_hashtag();
-			
+    		
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
